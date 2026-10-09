@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Công cụ đo ER-420 · 620HD/650</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F2F4F7; --panel:#FFFFFF; --ink:#1B2533; --muted:#5D6878; --line:#D9DFE7; --field:#F8FAFC;
+  --pri:#1F4E79; --pri-ink:#FFFFFF; --pri-soft:#E7EEF6; --pri-line:#B9CCE0; --data:#8193A8;
+  --ok:#2E7D32; --ok-soft:#EAF4EA; --warn:#A35F00; --warn-soft:#FFF4E0; --bad:#B42318; --bad-soft:#FDECEA;
+  --loop:var(--pri); --loop-soft:var(--pri-soft); --copper:var(--pri); --copper-soft:var(--pri-soft);
+  --radius:8px; --shadow:0 1px 2px rgba(16,24,40,.06);
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#11161D; --panel:#19212B; --ink:#E3E8EF; --muted:#9AA6B5; --line:#2A3542; --field:#141B23;
+    --pri:#6FA8DC; --pri-ink:#0E1620; --pri-soft:#1C2C3D; --pri-line:#2F4A66; --data:#7E8FA3;
+    --ok:#81C784; --ok-soft:#1B2E1D; --warn:#F0B35A; --warn-soft:#33270F; --bad:#F28B82; --bad-soft:#3A1D1B;
+    --shadow:none;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#11161D; --panel:#19212B; --ink:#E3E8EF; --muted:#9AA6B5; --line:#2A3542; --field:#141B23;
+  --pri:#6FA8DC; --pri-ink:#0E1620; --pri-soft:#1C2C3D; --pri-line:#2F4A66; --data:#7E8FA3;
+  --ok:#81C784; --ok-soft:#1B2E1D; --warn:#F0B35A; --warn-soft:#33270F; --bad:#F28B82; --bad-soft:#3A1D1B;
+  --shadow:none;
+}
+*,*::before,*::after{box-sizing:inherit}
+[hidden]{display:none!important}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Be Vietnam Pro",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-size:15px;line-height:1.55;font-variant-numeric:tabular-nums}
+code{background:var(--pri-soft);padding:1px 5px;border-radius:4px;font-size:.88em}
+
+header.top{background:var(--pri);color:var(--pri-ink);padding:20px 0 56px}
+header.top>*{max-width:1180px;margin-left:auto;margin-right:auto;padding:0 20px}
+header.top h1{font-size:1.45rem;line-height:1.25;margin:0 auto 4px;font-weight:700}
+header.top p{margin:0 auto;opacity:.85;font-size:.93rem}
+.probe-strip{max-width:1180px;margin:-40px auto 0;padding:0 20px;position:relative}
+.probe-strip .inner{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:2px;background:var(--line);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+.probe-strip .inner>div{background:var(--panel);padding:10px 14px;display:flex;flex-direction:column}
+.probe-strip span{color:var(--muted);font-size:.8rem}
+.probe-strip b{font-weight:700;font-size:1.05rem;color:var(--pri)}
+
+.layout{max-width:1180px;margin:18px auto 40px;padding:0 20px;display:grid;grid-template-columns:240px 1fr;gap:20px;align-items:start}
+nav.steps{position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px);display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:8px;box-shadow:var(--shadow)}
+nav.steps button{all:unset;cursor:pointer;display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:center;padding:9px 10px;border-radius:6px;color:var(--muted);font-size:.93rem;position:relative}
+nav.steps button:hover{background:var(--field);color:var(--ink)}
+nav.steps button .n{width:28px;height:28px;border-radius:50%;border:1.5px solid var(--line);display:grid;place-items:center;font-weight:600;font-size:.85rem;background:var(--panel)}
+nav.steps button[aria-current="step"]{background:var(--pri-soft);color:var(--pri);font-weight:600}
+nav.steps button[aria-current="step"] .n{border-color:var(--pri);background:var(--pri);color:var(--pri-ink)}
+nav.steps button.done .n{border-color:var(--pri);color:var(--pri)}
+nav.steps button:focus-visible{outline:2px solid var(--pri);outline-offset:2px}
+
+main section{display:none}
+main section.active{display:block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:22px;margin-bottom:16px;box-shadow:var(--shadow)}
+h2{font-size:1.2rem;margin:0 0 6px;font-weight:700;color:var(--ink);padding-bottom:10px;border-bottom:2px solid var(--pri-soft)}
+h3{font-size:.98rem;margin:22px 0 10px;font-weight:600;color:var(--pri)}
+.lead{color:var(--muted);margin:10px 0 16px;max-width:75ch}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+label.f{display:block;font-size:.85rem;color:var(--muted);margin-bottom:5px;font-weight:500}
+input[type=number],input[type=text],select,textarea{width:100%;font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:9px 11px;min-height:40px}
+input:hover,select:hover,textarea:hover{border-color:var(--pri-line)}
+textarea{font-size:.85rem;min-height:170px;font-family:ui-monospace,Menlo,Consolas,monospace;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--pri);box-shadow:0 0 0 3px var(--pri-soft)}
+button:focus-visible{outline:2px solid var(--pri);outline-offset:2px}
+input[type=range]{width:100%;accent-color:var(--pri);min-height:auto;box-shadow:none}
+.btn{font:inherit;font-weight:600;font-size:.92rem;cursor:pointer;border-radius:6px;padding:9px 16px;min-height:40px;border:1px solid var(--pri);background:var(--pri);color:var(--pri-ink)}
+.btn:hover{filter:brightness(1.08)}
+.btn.ghost{background:var(--panel);color:var(--pri);border-color:var(--pri-line)}
+.btn.ghost:hover{background:var(--pri-soft);filter:none}
+.btn-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+
+.probes{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.probe{all:unset;cursor:pointer;border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;background:var(--panel)}
+.probe:hover{border-color:var(--pri-line)}
+.probe .code{font-size:1.3rem;font-weight:700;color:var(--ink)}
+.probe .meta{font-size:.8rem;color:var(--muted)}
+.probe[aria-pressed="true"]{border-color:var(--pri);box-shadow:inset 0 0 0 1px var(--pri);background:var(--pri-soft)}
+.probe[aria-pressed="true"] .code{color:var(--pri)}
+.probe:focus-visible{outline:2px solid var(--pri);outline-offset:2px}
+.probe .life{margin-top:6px;font-size:.78rem;font-weight:600}
+.probe .life.good{color:var(--ok)} .probe .life.short{color:var(--bad)} .probe .life.long{color:var(--warn)}
+
+.note{border-radius:6px;padding:10px 12px 10px 14px;margin:10px 0;font-size:.9rem;border:1px solid transparent;border-left-width:4px}
+.note.info{background:var(--pri-soft);border-color:var(--pri-line);border-left-color:var(--pri)}
+.note.warn{background:var(--warn-soft);border-color:transparent;border-left-color:var(--warn)}
+.note.bad{background:var(--bad-soft);border-left-color:var(--bad)}
+.note.ok{background:var(--ok-soft);border-left-color:var(--ok)}
+
+.results{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-top:14px}
+.res{border:1px solid var(--line);border-radius:var(--radius);padding:11px 13px;background:var(--field)}
+.res .v{font-size:1.35rem;font-weight:700;line-height:1.25;color:var(--ink)}
+.res .k{font-size:.78rem;color:var(--muted)}
+.res.hl{border-color:var(--pri-line);background:var(--pri-soft)}
+.res.hl .v{color:var(--pri)}
+
+.gauge{margin:18px 0 6px}
+.gauge svg,.chart svg{width:100%;height:auto;display:block}
+.formula{background:var(--field);border:1px solid var(--line);border-left:3px solid var(--pri);border-radius:6px;padding:10px 12px;font-size:.9rem;overflow-x:auto}
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius)}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th,td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left;white-space:nowrap}
+th{font-weight:600;color:var(--pri);background:var(--pri-soft)}
+tbody tr:last-child td{border-bottom:0}
+tr.cur td{background:var(--pri-soft);font-weight:600}
+ul.check{list-style:none;padding:0;margin:0;border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+ul.check li{padding:9px 12px;border-bottom:1px solid var(--line)}
+ul.check li:last-child{border-bottom:0}
+ul.check li:has(input:checked){background:var(--ok-soft)}
+ul.check label{display:grid;grid-template-columns:22px 1fr;gap:10px;cursor:pointer}
+ul.check input{width:18px;height:18px;accent-color:var(--pri);margin-top:3px;min-height:auto}
+.dial{display:flex;gap:20px;align-items:center;flex-wrap:wrap}
+.dial svg{width:180px;height:auto;flex:none}
+.small{font-size:.82rem;color:var(--muted)}
+.foot-nav{display:flex;justify-content:space-between;gap:8px;margin-top:4px}
+@media (max-width:820px){
+  .layout{grid-template-columns:1fr}
+  nav.steps{position:static;flex-direction:row;overflow-x:auto;gap:4px}
+  nav.steps button{grid-template-columns:26px auto;white-space:nowrap;padding:6px 8px}
+  nav.steps button .n{width:26px;height:26px}
+  .card{padding:16px}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Đo đầu dò ăn mòn 620HD/650 qua bộ phát ER-420</h1>
+  <p>Đi lần lượt 6 bước: chọn đầu dò, kiểm tra vòng dòng, quy đổi mA sang mất kim loại, tính tốc độ ăn mòn, tra bảng và checklist, rồi đối chiếu với số liệu cũ.</p>
+</header>
+
+<div class="probe-strip"><div class="inner" id="strip"></div></div>
+
+<div class="layout">
+  <nav class="steps" aria-label="Các bước">
+    <button data-step="0"><span class="n">1</span><span>Chọn đầu dò</span></button>
+    <button data-step="1"><span class="n">2</span><span>Lắp đặt &amp; vòng dòng</span></button>
+    <button data-step="2"><span class="n">3</span><span>Đọc mA → mất kim loại</span></button>
+    <button data-step="3"><span class="n">4</span><span>Tốc độ ăn mòn</span></button>
+    <button data-step="4"><span class="n">5</span><span>Bảng tra &amp; checklist</span></button>
+    <button data-step="5"><span class="n">6</span><span>Đối chiếu RCS P100</span></button>
+  </nav>
+
+  <main>
+  <!-- STEP 1 -->
+  <section id="s0">
+    <div class="card">
+      <h2>Bước 1. Chọn đầu dò và span</h2>
+      <p class="lead">Span là tuổi thọ hữu dụng của phần tử cảm biến, và là mức mất kim loại ứng với 20 mA. Mọi phép quy đổi sau đều dùng span này.</p>
+      <div class="probes" id="probeGrid"></div>
+      <h3>Gợi ý chọn span theo tốc độ ăn mòn dự kiến</h3>
+      <p class="small" style="margin-top:0">Tài liệu khuyên chọn đầu dò hết tuổi thọ sau khoảng 6–9 tháng. Nhập tốc độ dự kiến để xem tuổi thọ của từng span ngay trên các thẻ ở trên.</p>
+      <div class="grid2">
+        <div>
+          <label class="f" for="expRate">Tốc độ ăn mòn dự kiến (mpy)</label>
+          <input type="number" id="expRate" min="0" step="0.1" placeholder="ví dụ 15">
+        </div>
+        <div id="expAdvice" class="small" style="align-self:end"></div>
+      </div>
+    </div>
+    <div class="card" id="probeDetail"></div>
+    <div class="foot-nav"><span></span><button class="btn" data-go="1">Sang bước 2</button></div>
+  </section>
+
+  <!-- STEP 2 -->
+  <section id="s1">
+    <div class="card">
+      <h2>Bước 2. Lắp đặt và kiểm tra vòng dòng</h2>
+      <p class="lead">Ba việc chính: đặt đúng công tắc loại đầu dò, cấp nguồn cho vòng dòng sao cho đầu cực ER-420 có 10–30 VDC, và dùng safety barrier nếu ở vùng nguy hiểm.</p>
+      <h3>2.1 Công tắc xoay trong ER-420</h3>
+      <div class="dial">
+        <svg id="dialSvg" viewBox="0 0 200 200" role="img" aria-label="Vị trí công tắc"></svg>
+        <div id="dialText"></div>
+      </div>
+      <div class="note warn">Cột vị trí công tắc lấy từ bảng tương thích (Figure 1.3, sách ER-420) mà bản trích bị lỗi định dạng. Đối chiếu lại với sách gốc trước khi đặt.</div>
+
+      <h3>2.2 Tính điện áp tại đầu cực ER-420</h3>
+      <div class="grid2">
+        <div>
+          <label class="f" for="vs">Điện áp nguồn (VDC)</label>
+          <input type="number" id="vs" step="0.1" value="24">
+        </div>
+        <div>
+          <label class="f" for="rl">Tổng tải trong vòng (Ω): điện trở ngõ vào PLC/đồng hồ + barrier + dây</label>
+          <input type="number" id="rl" step="1" value="250">
+        </div>
+        <div>
+          <label class="f" for="cable">Chiều dài cáp đầu dò (ft)</label>
+          <input type="number" id="cable" step="1" value="5">
+        </div>
+        <div>
+          <label class="f" for="zone">Vị trí đầu dò và bộ phát</label>
+          <select id="zone">
+            <option value="safe">Cả hai ở vùng an toàn</option>
+            <option value="z2">Cả hai ở Class 1 Div 2 / Zone 2</option>
+            <option value="z1">Đầu dò hoặc bộ phát ở Class 1 Div 1 / Zone 1</option>
+          </select>
+        </div>
+      </div>
+      <div class="formula" style="margin-top:14px">V tại đầu cực (lúc 20 mA) = V nguồn − 0,020 A × R tải</div>
+      <div class="results" id="loopRes"></div>
+      <div id="loopMsgs"></div>
+
+      <h3>2.3 Checklist lắp đặt</h3>
+      <ul class="check" id="instCheck"></ul>
+    </div>
+    <div class="foot-nav"><button class="btn ghost" data-go="0">Quay lại</button><button class="btn" data-go="2">Sang bước 3</button></div>
+  </section>
+
+  <!-- STEP 3 -->
+  <section id="s2">
+    <div class="card">
+      <h2>Bước 3. Đọc dòng mA và quy đổi sang mất kim loại</h2>
+      <p class="lead">Dòng 4–20 mA tuyến tính với mức mất kim loại từ 0 đến span: 4 mA là chưa mất kim loại, 20 mA là phần tử đã ăn mòn hết.</p>
+      <div class="formula">Metal loss = (I − 4) / 16 × Span &nbsp;&nbsp;·&nbsp;&nbsp; 1 chia độ = Span / 1000</div>
+      <div class="grid2" style="margin-top:14px">
+        <div>
+          <label class="f" for="ma">Dòng đọc được I (mA)</label>
+          <input type="number" id="ma" step="0.01" value="12">
+        </div>
+        <div>
+          <label class="f" for="maR">Kéo để thử nhanh</label>
+          <input type="range" id="maR" min="3" max="21" step="0.01" value="12">
+        </div>
+      </div>
+      <div class="gauge"><svg id="gauge" viewBox="0 0 640 90" role="img" aria-label="Vị trí dòng trên thang 4-20 mA"></svg></div>
+      <div class="results" id="maRes"></div>
+      <div id="maMsgs"></div>
+      <div class="formula" id="maWork" style="margin-top:10px"></div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">Quy đổi ngược: mất kim loại → mA</h3>
+      <p class="small" style="margin-top:0">Dùng để đặt ngưỡng cảnh báo trên PLC/DCS, ví dụ ngưỡng thay đầu dò ở 7/8 tuổi thọ.</p>
+      <div class="grid2">
+        <div>
+          <label class="f" for="revVal">Mất kim loại</label>
+          <input type="number" id="revVal" step="0.01" value="">
+        </div>
+        <div>
+          <label class="f" for="revUnit">Đơn vị</label>
+          <select id="revUnit"><option value="mil">mil</option><option value="mm">mm</option><option value="pct">% span</option></select>
+        </div>
+      </div>
+      <div class="results" id="revRes"></div>
+    </div>
+    <div class="foot-nav"><button class="btn ghost" data-go="1">Quay lại</button><button class="btn" data-go="3">Sang bước 4</button></div>
+  </section>
+
+  <!-- STEP 4 -->
+  <section id="s3">
+    <div class="card">
+      <h2>Bước 4. Tính tốc độ ăn mòn từ chuỗi dữ liệu</h2>
+      <p class="lead">Tốc độ là hệ số góc của đường hồi quy tuyến tính qua m điểm gần nhất trong cửa sổ 1–5 ngày. Ghi số liệu 5 phút một lần (288 điểm/ngày).</p>
+      <div class="formula">Rate = [ m·Σ(xᵢyᵢ) − Σxᵢ·Σyᵢ ] / [ m·Σxᵢ² − (Σxᵢ)² ] &nbsp;(x: ngày, y: mil) → × 365 = mpy → × 0,0254 = mm/năm</div>
+
+      <h3>4.1 Nhập dữ liệu</h3>
+      <p class="small" style="margin-top:0">Mỗi dòng một điểm: <b>thời gian, giá trị</b>. Thời gian dạng <code>2026-10-01 08:05</code> hoặc số ngày (ví dụ <code>0.0035</code>). Ngăn cách bằng dấu phẩy, chấm phẩy hoặc tab; số thập phân dùng dấu chấm. Có thể dán thẳng từ Excel.</p>
+      <div class="grid2">
+        <div>
+          <label class="f" for="valType">Giá trị trong dữ liệu là</label>
+          <select id="valType"><option value="ma">Dòng mA (tự quy đổi theo span)</option><option value="mil">Mất kim loại (mil)</option></select>
+        </div>
+        <div>
+          <label class="f" for="win">Cửa sổ hồi quy: <b id="winLbl">3</b> ngày (≈ <span id="winPts">864</span> điểm)</label>
+          <input type="range" id="win" min="1" max="5" step="0.5" value="3">
+        </div>
+      </div>
+      <textarea id="data" style="margin-top:12px" placeholder="2026-10-01 00:00, 8.00&#10;2026-10-01 00:05, 8.01&#10;..."></textarea>
+      <div class="btn-row">
+        <button class="btn" id="calc">Tính tốc độ</button>
+        <button class="btn ghost" id="sample">Tạo dữ liệu mẫu 5 ngày</button>
+        <button class="btn ghost" id="clear">Xóa dữ liệu</button>
+      </div>
+      <div id="rateMsgs"></div>
+    </div>
+    <div class="card" id="rateCard" hidden>
+      <h3 style="margin-top:0">4.2 Kết quả</h3>
+      <div class="results" id="rateRes"></div>
+      <div class="chart" id="chart" style="margin-top:16px"></div>
+      <div id="rateMsgs2"></div>
+      <div class="tbl-wrap"><table style="margin-top:10px"><thead><tr><th>Cửa sổ ngắn (1 ngày)</th><th>Cửa sổ dài (5 ngày)</th></tr></thead>
+      <tbody><tr><td>Nhạy với thay đổi đột ngột</td><td>Ít nhạy hơn với biến động</td></tr><tr><td>Nhiễu hơn</td><td>Ổn định, ít nhiễu hơn</td></tr></tbody></table></div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">Đổi đơn vị tốc độ</h3>
+      <div class="grid2">
+        <div><label class="f" for="cvDay">mil/ngày</label><input type="number" id="cvDay" step="0.001" value="0.02"></div>
+        <div><label class="f" for="cvMpy">mpy (mil/năm)</label><input type="number" id="cvMpy" step="0.01"></div>
+        <div><label class="f" for="cvMm">mm/năm</label><input type="number" id="cvMm" step="0.001"></div>
+      </div>
+    </div>
+    <div class="foot-nav"><button class="btn ghost" data-go="2">Quay lại</button><button class="btn" data-go="4">Sang bước 5</button></div>
+  </section>
+
+  <!-- STEP 5 -->
+  <section id="s4">
+    <div class="card">
+      <h2>Bước 5. Bảng tra nhanh và checklist</h2>
+      <p class="lead">Metal loss (mil) ở các mức dòng thường gặp. Dòng tô màu là span đầu dò đang chọn. Nhân 0,0254 để ra mm.</p>
+      <div class="tbl-wrap"><table id="lookup"></table></div>
+      <h3>Đổi mil ↔ mm</h3>
+      <div class="grid2">
+        <div><label class="f" for="cMil">mil</label><input type="number" id="cMil" step="0.01" value="1"></div>
+        <div><label class="f" for="cMm">mm</label><input type="number" id="cMm" step="0.0001"></div>
+      </div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">Checklist trước khi đọc số liệu</h3>
+      <ul class="check" id="finalCheck"></ul>
+      <div class="btn-row"><button class="btn ghost" id="resetCheck">Bỏ đánh dấu tất cả</button></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">Lưu ý vận hành</h3>
+      <ul style="margin:0;padding-left:18px">
+        <li><b>Nối đất C.P.:</b> nối đầu dò với kết cấu được bảo vệ catốt để đo hiệu quả C.P.; không nối thì đo độ ăn mòn của đất. Muốn theo dõi cả hai cần hai đầu dò. Nối thẳng vào kết cấu, không nối tại bộ chỉnh lưu hay anode hy sinh.</li>
+        <li><b>Check element:</b> ER-420 không dùng check element, nên không kiểm tra được độ tin cậy phần tử tham chiếu.</li>
+        <li><b>Nhiệt độ:</b> tối đa 70°C (160°F); dao động nhiệt có thể làm nhiễu số đọc khi tốc độ ăn mòn thấp.</li>
+        <li><b>Thay đầu dò:</b> ở khoảng 7/8 tuổi thọ (875 chia độ, tức 18 mA). Tắt nguồn vòng dòng khi thay; thay đầu dò giống hệt thường không cần hiệu chuẩn lại ER-420.</li>
+        <li><b>Thay model 4020 cũ:</b> 4020 phi tuyến, ER-420 tuyến tính, nên phải sửa công thức quy đổi trên PLC/DCS.</li>
+        <li><b>Sửa chữa ER-420:</b> chỉ Cosasco hoặc đại lý ủy quyền, để giữ chứng nhận an toàn nội tại.</li>
+      </ul>
+      <div class="note warn">Công thức quy đổi và hồi quy được suy ra từ sách ER-420 (chương 4) vì công thức gốc là hình ảnh. Đối chiếu với sách trước khi dùng cho báo cáo chính thức.</div>
+      <p class="small">Nguồn: ER-420 Transmitter User Manual (Cosasco, Rev D); Model 620HD/650 Underground ER Probes (Cosasco, rev D).</p>
+    </div>
+    <div class="foot-nav"><button class="btn ghost" data-go="3">Quay lại</button><button class="btn" data-go="5">Sang bước 6</button></div>
+  </section>
+  <!-- STEP 6 -->
+  <section id="s5">
+    <div class="card">
+      <h2>Bước 6. Đối chiếu với số liệu cũ của cảm biến RCS-P100-2</h2>
+      <p class="lead">Số liệu cũ lấy từ báo cáo nội bộ JV (sheet "SỐ LIỆU ĐO CẢM BIẾN RCS P100"): 27 lần đọc từ 10/08/2017 (ngay sau đổ bê tông) đến 30/01/2021, đơn vị DIV (chia độ 0–1000), span 25 mil.</p>
+      <div class="formula">Công thức trong báo cáo: Rate (mm/năm) = 0,00927 × (DIV − DIV₀) × Span / số ngày &nbsp;&nbsp;·&nbsp;&nbsp; 0,00927 = 365 × 0,0254 / 1000<br>Quy đổi mA ↔ DIV: DIV = (I − 4) / 16 × 1000 &nbsp;&nbsp;·&nbsp;&nbsp; I = 4 + DIV × 0,016</div>
+      <div class="results" id="hStats"></div>
+      <div class="chart" id="hChart" style="margin-top:14px"></div>
+      <p class="small">Vùng tô màu: trung bình ± 2 độ lệch chuẩn của các lần đọc sau ngày gốc. Đường nét đứt: DIV₀ = 32.2 ngày 10/08/2017.</p>
+    </div>
+
+    <div class="card">
+      <h3 style="margin-top:0">Nhập lần đo mới</h3>
+      <p class="small" style="margin-top:0">Báo cáo cũ lấy trung bình 3 lần đọc mỗi đợt; nhập 1–3 lần đọc, ô trống được bỏ qua.</p>
+      <div class="grid2">
+        <div><label class="f" for="nDate">Ngày đo</label><input type="text" id="nDate" value="2026-10-07" placeholder="YYYY-MM-DD"></div>
+        <div><label class="f" for="nType">Đơn vị số đọc</label><select id="nType"><option value="ma">Dòng mA (từ ER-420)</option><option value="div">DIV (máy đọc ER cầm tay)</option></select></div>
+        <div><label class="f" for="nSpan">Span cảm biến (mil)</label><input type="number" id="nSpan" value="25" step="1"></div>
+      </div>
+      <div class="grid2" style="margin-top:12px">
+        <div><label class="f" for="n1">Lần đọc 1</label><input type="number" id="n1" step="0.001" placeholder="ví dụ 4.540"></div>
+        <div><label class="f" for="n2">Lần đọc 2</label><input type="number" id="n2" step="0.001"></div>
+        <div><label class="f" for="n3">Lần đọc 3</label><input type="number" id="n3" step="0.001"></div>
+      </div>
+      <div class="results" id="nRes"></div>
+      <div id="nMsgs"></div>
+      <h3>Dòng để dán vào báo cáo Excel</h3>
+      <p class="small" style="margin-top:0">Cùng thứ tự cột với sheet cũ: ngày, DIV, span, số ngày, rate (mm/năm).</p>
+      <div class="formula" id="nRow">—</div>
+      <div class="btn-row"><button class="btn" id="nSave">Lưu lần đo này vào biểu đồ</button><button class="btn ghost" id="nCopy">Sao chép dòng</button></div>
+    </div>
+
+
+    <div class="card" id="reportCard">
+      <h3 style="margin-top:0">Biểu đồ kết quả (cùng kiểu báo cáo trước)</h3>
+      <p class="small" style="margin-top:0">Giống biểu đồ trong file cũ: trục ngang là số ngày từ 10/08/2017, trục đứng là tốc độ ăn mòn (mm/năm) tính theo công thức báo cáo. Số liệu cũ và các lần đo mới đã lưu được vẽ chung; lần đang nhập (chưa lưu) hiện bằng chấm rỗng.</p>
+      <div class="grid2">
+        <div><label class="f" for="rTitle">Tiêu đề biểu đồ</label><input type="text" id="rTitle" value="Graphs for Corrosion Rate of Rebar in Diaphragm Wall"></div>
+        <div><label class="f" for="rMetric">Trục đứng</label><select id="rMetric"><option value="rate">Tốc độ ăn mòn (mm/năm), như báo cáo cũ</option><option value="div">Số đọc DIV</option><option value="loss">Mất kim loại tích lũy (mm)</option></select></div>
+      </div>
+      <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:.9rem;cursor:pointer"><input type="checkbox" id="rFixed" style="width:18px;height:18px;accent-color:var(--pri)"> Giữ thang trục như báo cáo cũ (0–0.014 mm/năm)</label>
+      <div class="chart" id="reportChart" style="margin-top:12px;border:1px solid var(--line);border-radius:8px;overflow:hidden"></div>
+      <div class="btn-row" id="dlRow" hidden>
+        <button class="btn" id="dlPng">Tải ảnh PNG</button>
+        <button class="btn ghost" id="dlSvg">Tải SVG</button>
+        <button class="btn ghost" id="dlCsv">Tải CSV cả chuỗi số liệu</button>
+      </div>
+      <div id="dlMsg"></div>
+      <h3>Các lần đo mới đã lưu</h3>
+      <div class="tbl-wrap"><table id="savedTbl"></table></div>
+      <div class="btn-row"><button class="btn ghost" id="copyAll">Sao chép tất cả dòng (dán vào Excel)</button></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-top:0">Cần biết trước khi so sánh</h3>
+      <ul style="margin:0;padding-left:18px">
+        <li><b>Độ phân giải:</b> ER-420 có độ phân giải ±0.1%, tức khoảng ±1 DIV hay ±0.016 mA. Cả 3,5 năm số liệu cũ chỉ dao động trong khoảng 2 DIV, nên đồng hồ mA cần đọc được tới 0.001 mA, và một chênh lệch 1–2 DIV chưa đủ để kết luận.</li>
+        <li><b>Khác thiết bị đọc:</b> số cũ đọc bằng máy ER (đơn vị DIV), số mới qua ER-420. Nếu còn máy cũ, nên đo cả hai trong cùng ngày để biết độ lệch giữa hai thiết bị.</li>
+        <li><b>Tương thích:</b> báo cáo không ghi loại phần tử của RCS-P100-2. Kiểm tra cảm biến có đầu nối và loại phần tử nằm trong bảng tương thích của ER-420 không, và đặt công tắc theo đúng loại đó.</li>
+        <li><b>Không dùng bước 4 cho cảm biến này:</b> tốc độ ăn mòn ở đây quá thấp để hồi quy trên cửa sổ 1–5 ngày cho ra kết quả có nghĩa. Dùng công thức theo ngày gốc như báo cáo cũ.</li>
+        <li><b>Lỗi nhỏ trong file cũ:</b> ngày 07/12/2018 nhập tay 34.4 trong khi 3 số đọc thô bị chép trùng với ngày 22/06/2019; ngày 22/06/2018 chỉ lấy trung bình 2 trong 3 số đọc; ngày 22/12/2019 và 22/06/2020 không có số đọc thô. Ảnh hưởng không đáng kể đến kết luận.</li>
+      </ul>
+    </div>
+    <div class="foot-nav"><button class="btn ghost" data-go="4">Quay lại</button><span></span></div>
+  </section>
+  </main>
+</div>
+
+<script>
+(function(){
+const PROBES=[
+ {id:'S10',model:'620HD',shape:'dạng phẳng (flush)',span:5,pos:2},
+ {id:'S20',model:'620HD',shape:'',span:10,pos:1},
+ {id:'S40',model:'620HD',shape:'',span:20,pos:1},
+ {id:'T10',model:'650',shape:'hình trụ (welded)',span:5,pos:3},
+ {id:'T20',model:'650',shape:'hình trụ (welded)',span:10,pos:3},
+ {id:'T50',model:'650',shape:'hình trụ (welded)',span:25,pos:3}
+];
+const POS_TEXT={0:'W40, W45, W60, W80',1:'T4, T8, S20, S40, S60',2:'S4, S8, S10',3:'T10, T20, T50'};
+const MM=0.0254;
+const $=id=>document.getElementById(id);
+const fmt=(v,d=2)=>Number.isFinite(v)?v.toFixed(d):'—';
+
+const store={get(k,d){try{const v=localStorage.getItem('er420:'+k);return v===null?d:JSON.parse(v)}catch(e){return d}},
+ set(k,v){try{localStorage.setItem('er420:'+k,JSON.stringify(v))}catch(e){}}};
+
+let probeId=store.get('probe','T20');
+const probe=()=>PROBES.find(p=>p.id===probeId)||PROBES[4];
+
+/* ---------- navigation ---------- */
+const navBtns=[...document.querySelectorAll('nav.steps button')];
+function go(i){
+  document.querySelectorAll('main section').forEach((s,j)=>s.classList.toggle('active',j===i));
+  navBtns.forEach((b,j)=>{b.toggleAttribute('aria-current',false); if(j===i)b.setAttribute('aria-current','step'); b.classList.toggle('done',j<i)});
+  store.set('step',i);
+  window.scrollTo({top:0});
+}
+navBtns.forEach(b=>b.addEventListener('click',()=>go(+b.dataset.step)));
+document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>go(+b.dataset.go)));
+
+/* ---------- strip ---------- */
+function renderStrip(){
+  const p=probe();
+  $('strip').innerHTML=`<div><span>Đầu dò:</span> <b>${p.model} ${p.id}</b></div>
+  <div><span>Span:</span> <b>${p.span} mil</b> (${fmt(p.span*MM,3)} mm)</div>
+  <div><span>Công tắc ER-420:</span> <b>vị trí ${p.pos}</b></div>
+  <div><span>1 chia độ:</span> <b>${fmt(p.span/1000,3)} mil</b></div>`;
+}
+
+/* ---------- step 1 ---------- */
+function renderProbes(){
+  const r=parseFloat($('expRate').value);
+  $('probeGrid').innerHTML=PROBES.map(p=>{
+    let life='';
+    if(r>0){const m=p.span/r*12;const cls=m<6?'short':(m>9?'long':'good');
+      life=`<div class="life ${cls}">≈ ${fmt(m,1)} tháng${cls==='good'?' · phù hợp':cls==='short'?' · quá ngắn':' · dài, kém nhạy'}</div>`}
+    return `<button class="probe" data-id="${p.id}" aria-pressed="${p.id===probeId}">
+      <div class="meta">${p.model}${p.shape?' · '+p.shape:''}</div>
+      <div class="code">${p.id}</div>
+      <div class="meta">Span ${p.span} mil · ${fmt(p.span*MM,3)} mm</div>${life}</button>`}).join('');
+  document.querySelectorAll('.probe').forEach(b=>b.addEventListener('click',()=>{probeId=b.dataset.id;store.set('probe',probeId);renderAll()}));
+  const adv=$('expAdvice');
+  if(r>0){const ok=PROBES.filter(p=>{const m=p.span/r*12;return m>=6&&m<=9});
+    adv.innerHTML=ok.length?`Span cho tuổi thọ 6–9 tháng: <b>${ok.map(p=>p.id).join(', ')}</b>.`:`Không span nào rơi đúng 6–9 tháng; chọn span có tuổi thọ gần nhất và lên lịch thay sớm.`}
+  else adv.textContent='';
+}
+function renderProbeDetail(){
+  const p=probe();
+  $('probeDetail').innerHTML=`<h3 style="margin-top:0">Thông số ${p.model} ${p.id}</h3>
+  <div class="results">
+   <div class="res hl"><div class="k">Span (mil)</div><div class="v">${p.span}</div></div>
+   <div class="res"><div class="k">Span (mm)</div><div class="v">${fmt(p.span*MM,3)}</div></div>
+   <div class="res"><div class="k">Mỗi 1 mA tương ứng</div><div class="v">${fmt(p.span/16,4)} mil</div></div>
+   <div class="res"><div class="k">Vị trí công tắc ER-420</div><div class="v">${p.pos}</div></div>
+  </div>
+  <p class="small">Vật liệu phần tử chuẩn: thép carbon (UNS K03005). Nhiệt độ tối đa 70°C (160°F). Mã đặt hàng mẫu: <code>620HD 2 S10 K03005 100</code> (620HD, dây nối đất ở đầu probe, phần tử S10, thép carbon, cáp 100 ft).</p>`;
+}
+
+/* ---------- step 2 ---------- */
+function renderDial(){
+  const p=probe();const pos=[[100,40],[160,100],[100,160],[40,100]];
+  let s=`<circle cx="100" cy="100" r="88" fill="var(--pri-soft)" stroke="var(--pri)" stroke-width="3"/>`;
+  pos.forEach((c,i)=>{const on=i===p.pos;
+    s+=`<circle cx="${c[0]}" cy="${c[1]}" r="17" fill="${on?'var(--pri)':'var(--panel)'}" stroke="var(--pri)" stroke-width="2"/>
+    <text x="${c[0]}" y="${c[1]+6}" text-anchor="middle" font-size="17" font-weight="700" fill="${on?'var(--pri-ink)':'var(--pri)'}" font-family="inherit">${i}</text>`});
+  const t=pos[p.pos];const dx=t[0]-100,dy=t[1]-100,L=Math.hypot(dx,dy),ex=100+dx/L*38,ey=100+dy/L*38;
+  s+=`<line x1="100" y1="100" x2="${ex}" y2="${ey}" stroke="var(--copper)" stroke-width="5" stroke-linecap="round"/><circle cx="100" cy="100" r="11" fill="var(--pri)"/>`;
+  $('dialSvg').innerHTML=s;
+  $('dialText').innerHTML=`<div style="font-size:1.1rem;font-weight:600">Đặt công tắc ở vị trí ${p.pos}</div>
+  <div class="small">Vị trí ${p.pos} dùng cho: ${POS_TEXT[p.pos]}. Đầu dò đang chọn: ${p.model} ${p.id}.</div>
+  <div class="small" style="margin-top:6px">0: W40, W45, W60, W80 · 1: T4, T8, S20, S40, S60 · 2: S4, S8, S10 · 3: T10, T20, T50</div>`;
+}
+const INST=[
+ 'ER-420 có đầu nối đúng loại với đầu dò',
+ 'Công tắc xoay bên trong ER-420 đặt đúng vị trí',
+ 'Bộ phát trong khoảng 48 inch (1,2 m) từ đầu dò để dùng cáp chuẩn 60 inch, chừa vòng dự phòng ~12 inch',
+ 'Vòng dòng 2 dây được cấp nguồn DC (thường 24 VDC)',
+ 'PLC/DCS hoặc đồng hồ mA mắc nối tiếp trong vòng',
+ 'Đầu nối ở đầu dò được bảo vệ khỏi môi trường, tiếp xúc điện tốt'
+];
+function renderLoop(){
+  const vs=parseFloat($('vs').value),rl=parseFloat($('rl').value),cable=parseFloat($('cable').value),zone=$('zone').value;
+  const vt=vs-0.02*rl; const rmax=(vs-10)/0.02;
+  $('loopRes').innerHTML=`
+   <div class="res hl"><div class="k">V tại đầu cực ở 20 mA</div><div class="v">${fmt(vt,2)} V</div></div>
+   <div class="res"><div class="k">V tại đầu cực ở 4 mA</div><div class="v">${fmt(vs-0.004*rl,2)} V</div></div>
+   <div class="res"><div class="k">Tải tối đa cho phép với nguồn này</div><div class="v">${fmt(Math.min(600,Math.max(0,rmax)),0)} Ω</div></div>`;
+  const m=[];
+  if(!(vs>0)||!(rl>=0)) m.push(['bad','Nhập điện áp nguồn và tổng tải hợp lệ.']);
+  else{
+    if(vt<10) m.push(['bad',`Điện áp tại đầu cực chỉ ${fmt(vt,2)} V ở 20 mA, dưới mức tối thiểu 10 V. Tăng nguồn hoặc giảm tải (tối đa ${fmt(Math.max(0,rmax),0)} Ω với nguồn ${vs} V).`]);
+    if(vs>30) m.push(['bad','Nguồn trên 30 VDC: vượt dải 10–30 VDC của ER-420.']);
+    if(rl>600) m.push(['bad','Tổng tải vượt 600 Ω.']);
+    if(vt>=10&&vs<=30&&rl<=600) m.push(['ok','Vòng dòng đạt: 10–30 VDC tại đầu cực và tổng tải không quá 600 Ω.']);
+  }
+  if(cable>100) m.push(['bad','Cáp đầu dò dài hơn 100 ft (giới hạn tối đa).']);
+  else if(cable>5) m.push(['info',`Cáp ${cable} ft: dài hơn cáp chuẩn 5 ft nhưng trong giới hạn 100 ft.`]);
+  if(zone==='z1') m.push(['bad','Bắt buộc dùng safety barrier cách ly galvanic theo hướng dẫn chứng nhận an toàn nội tại (xem Figure 3.3 sách ER-420). Nhớ cộng điện trở barrier vào tổng tải.']);
+  else if(zone==='z2') m.push(['warn','Cả đầu dò và bộ phát ở Class 1 Div 2 / Zone 2: sách cho phép không dùng barrier. Kiểm tra lại yêu cầu của nhà máy.']);
+  else m.push(['info','Vùng an toàn: không cần barrier.']);
+  $('loopMsgs').innerHTML=m.map(x=>`<div class="note ${x[0]}">${x[1]}</div>`).join('');
+  store.set('loop',{vs:$('vs').value,rl:$('rl').value,cable:$('cable').value,zone});
+}
+
+/* ---------- checklists ---------- */
+function renderChecklist(elId,items,key){
+  const st=store.get(key,{});
+  $(elId).innerHTML=items.map((t,i)=>`<li><label><input type="checkbox" data-i="${i}" ${st[i]?'checked':''}><span>${t}</span></label></li>`).join('');
+  $(elId).querySelectorAll('input').forEach(c=>c.addEventListener('change',()=>{const s=store.get(key,{});s[c.dataset.i]=c.checked;store.set(key,s)}));
+}
+const FINAL=[
+ 'Biết đúng loại phần tử đầu dò (S10, T20...) và span tương ứng',
+ 'Công tắc loại đầu dò trong ER-420 đã đặt đúng vị trí',
+ 'Nguồn vòng dòng 10–30 VDC tại đầu cực, tổng tải không quá 600 Ω',
+ 'Dùng safety barrier nếu đầu dò hoặc bộ phát ở Zone 1 / Class 1 Div 1',
+ 'Đã quyết định nối hay không nối đầu dò với kết cấu C.P.',
+ 'Hệ thống đọc ghi dữ liệu mỗi 5 phút',
+ 'Cửa sổ hồi quy 1–5 ngày đã cài, chờ metal loss đổi khoảng 10 chia độ trước khi dùng rate',
+ 'Đã lên lịch thay đầu dò khi dùng khoảng 7/8 tuổi thọ'
+];
+
+/* ---------- step 3 ---------- */
+const lossOf=(I,span)=>(I-4)/16*span;
+function renderMA(){
+  const p=probe(),I=parseFloat($('ma').value);
+  const loss=lossOf(I,p.span),pct=(I-4)/16*100,div=loss/p.span*1000;
+  // gauge
+  const x=v=>40+(Math.min(21,Math.max(3,v))-3)/18*560;
+  let g=`<rect x="${x(4)}" y="30" width="${x(20)-x(4)}" height="18" rx="3" fill="var(--loop-soft)" stroke="var(--line)"/>`;
+  g+=`<rect x="${x(18)}" y="30" width="${x(20)-x(18)}" height="18" fill="var(--warn-soft)" stroke="var(--warn)" stroke-width=".8"/>`;
+  if(Number.isFinite(I)&&I>=4) g+=`<rect x="${x(4)}" y="30" width="${x(Math.min(I,20))-x(4)}" height="18" rx="3" fill="var(--pri)" opacity=".85"/>`;
+  for(let v=4;v<=20;v+=2){g+=`<line x1="${x(v)}" y1="48" x2="${x(v)}" y2="56" stroke="var(--muted)"/><text x="${x(v)}" y="72" text-anchor="middle" font-size="12" fill="var(--muted)" font-family="inherit">${v}</text>`}
+  g+=`<text x="${x(19)}" y="22" text-anchor="middle" font-size="11" fill="var(--warn)" font-family="inherit">thay đầu dò</text>`;
+  if(Number.isFinite(I)) g+=`<path d="M${x(I)} 28 l-7 -10 h14 z" fill="var(--copper)"/>`;
+  g+=`<text x="${x(4)}" y="88" font-size="11" fill="var(--muted)" font-family="inherit">0 mil</text><text x="${x(20)}" y="88" text-anchor="end" font-size="11" fill="var(--muted)" font-family="inherit">${p.span} mil</text>`;
+  $('gauge').innerHTML=g;
+  const valid=Number.isFinite(I);
+  $('maRes').innerHTML=`
+   <div class="res hl"><div class="k">Mất kim loại</div><div class="v">${valid?fmt(loss,3):'—'} mil</div></div>
+   <div class="res"><div class="k">Mất kim loại</div><div class="v">${valid?fmt(loss*MM,4):'—'} mm</div></div>
+   <div class="res"><div class="k">Đã dùng tuổi thọ</div><div class="v">${valid?fmt(pct,1):'—'} %</div></div>
+   <div class="res"><div class="k">Chia độ (/1000)</div><div class="v">${valid?fmt(div,0):'—'}</div></div>
+   <div class="res"><div class="k">Còn lại</div><div class="v">${valid?fmt(p.span-loss,3):'—'} mil</div></div>`;
+  $('maWork').innerHTML=valid?`(${fmt(I,2)} − 4) / 16 × ${p.span} = <b>${fmt(loss,3)} mil</b> ≈ ${fmt(loss*MM,4)} mm`:'Nhập dòng đọc được.';
+  const m=[];
+  if(valid){
+    if(I<4) m.push(['bad','Dòng dưới 4 mA là bất thường: kiểm tra cáp, đầu nối, nguồn vòng dòng.']);
+    else if(I>20) m.push(['bad','Dòng trên 20 mA là bất thường: kiểm tra cáp, đầu nối, nguồn, hoặc đầu dò đã hết tuổi thọ.']);
+    else if(I>=18) m.push(['warn','Đã dùng từ 7/8 tuổi thọ (≥ 875 chia độ, 18 mA): lên kế hoạch thay đầu dò.']);
+    else m.push(['ok','Số đọc trong dải bình thường.']);
+  }
+  $('maMsgs').innerHTML=m.map(x=>`<div class="note ${x[0]}">${x[1]}</div>`).join('');
+  store.set('ma',$('ma').value);
+}
+function renderRev(){
+  const p=probe(),v=parseFloat($('revVal').value),u=$('revUnit').value;
+  if(!Number.isFinite(v)){$('revRes').innerHTML=`<div class="res"><div class="k">Ngưỡng 7/8 tuổi thọ của ${p.id}</div><div class="v">18.00 mA</div><div class="k">${fmt(p.span*0.875,3)} mil</div></div>`;return}
+  const mil=u==='mil'?v:u==='mm'?v/MM:v/100*p.span;
+  const I=4+mil/p.span*16;
+  $('revRes').innerHTML=`<div class="res hl"><div class="k">Dòng tương ứng</div><div class="v">${fmt(I,2)} mA</div></div>
+  <div class="res"><div class="k">= mil</div><div class="v">${fmt(mil,3)}</div></div>
+  <div class="res"><div class="k">= % span</div><div class="v">${fmt(mil/p.span*100,1)} %</div></div>`;
+}
+
+/* ---------- step 4 ---------- */
+function parseData(){
+  const lines=$('data').value.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  const pts=[];let bad=0,t0=null,isDate=null;
+  for(const l of lines){
+    const parts=l.includes('\t')?l.split('\t'):l.includes(';')?l.split(';'):l.split(',');
+    if(parts.length<2){bad++;continue}
+    const ts=parts[0].trim(),val=parseFloat(parts[parts.length-1].trim());
+    let x;
+    if(/^-?\d+(\.\d+)?$/.test(ts)){x=parseFloat(ts);if(isDate===null)isDate=false}
+    else{const d=Date.parse(ts.replace(' ','T'));if(isNaN(d)){bad++;continue}x=d/86400000;if(isDate===null)isDate=true}
+    if(!Number.isFinite(val)){bad++;continue}
+    pts.push({x,raw:val});
+  }
+  pts.sort((a,b)=>a.x-b.x);
+  if(pts.length){t0=pts[0].x;pts.forEach(p=>p.x-=t0)}
+  return {pts,bad,isDate,t0};
+}
+function regress(pts){
+  const m=pts.length;let sx=0,sy=0,sxy=0,sxx=0;
+  pts.forEach(p=>{sx+=p.x;sy+=p.y;sxy+=p.x*p.y;sxx+=p.x*p.x});
+  const den=m*sxx-sx*sx; if(m<2||den===0) return null;
+  const slope=(m*sxy-sx*sy)/den,inter=(sy-slope*sx)/m;return {slope,inter,m};
+}
+function calcRate(){
+  const p=probe(),W=parseFloat($('win').value),type=$('valType').value;
+  const {pts,bad}=parseData();const msgs=[];
+  if(bad) msgs.push(['warn',`Bỏ qua ${bad} dòng không đọc được.`]);
+  if(pts.length<2){msgs.push(['bad','Cần ít nhất 2 điểm hợp lệ.']);$('rateMsgs').innerHTML=msgs.map(x=>`<div class="note ${x[0]}">${x[1]}</div>`).join('');$('rateCard').hidden=true;return}
+  let outRange=0;
+  pts.forEach(q=>{q.y=type==='ma'?lossOf(q.raw,p.span):q.raw;if(type==='ma'&&(q.raw<4||q.raw>20))outRange++});
+  if(outRange) msgs.push(['warn',`${outRange} điểm có dòng ngoài 4–20 mA (bất thường); vẫn được tính, nên kiểm tra lại.`]);
+  const last=pts[pts.length-1].x;
+  const win=pts.filter(q=>q.x>=last-W-1e-9);
+  const r=regress(win);
+  $('rateMsgs').innerHTML=msgs.map(x=>`<div class="note ${x[0]}">${x[1]}</div>`).join('');
+  if(!r){$('rateCard').hidden=true;$('rateMsgs').innerHTML+=`<div class="note bad">Không hồi quy được: các điểm trong cửa sổ trùng thời gian.</div>`;return}
+  const span=last-win[0].x;
+  const mpy=r.slope*365,mmy=mpy*MM;
+  const cur=r.inter+r.slope*last;
+  const changeDiv=r.slope*span/p.span*1000;
+  const toRepl=r.slope>0?(0.875*p.span-cur)/r.slope:Infinity;
+  const toEnd=r.slope>0?(p.span-cur)/r.slope:Infinity;
+  const dstr=d=>!Number.isFinite(d)?'—':d<=0?'đã qua':d>60?fmt(d/30.4,1)+' tháng':fmt(d,0)+' ngày';
+  $('rateRes').innerHTML=`
+   <div class="res hl"><div class="k">Tốc độ</div><div class="v">${fmt(mpy,2)} mpy</div></div>
+   <div class="res"><div class="k">Tốc độ</div><div class="v">${fmt(mmy,4)} mm/năm</div></div>
+   <div class="res"><div class="k">Hệ số góc</div><div class="v">${fmt(r.slope,4)} mil/ngày</div></div>
+   <div class="res"><div class="k">Số điểm m</div><div class="v">${r.m}</div><div class="k">cửa sổ thực ${fmt(span,2)} ngày</div></div>
+   <div class="res"><div class="k">Mất kim loại hiện tại (theo đường hồi quy)</div><div class="v">${fmt(cur,3)} mil</div></div>
+   <div class="res"><div class="k">Còn đến mốc thay (7/8)</div><div class="v">${dstr(toRepl)}</div></div>
+   <div class="res"><div class="k">Còn đến hết tuổi thọ</div><div class="v">${dstr(toEnd)}</div></div>`;
+  const m2=[];
+  const expected=Math.round(W*288);
+  if(span<W*0.95) m2.push(['warn',`Dữ liệu chỉ phủ ${fmt(span,2)} ngày, ngắn hơn cửa sổ ${W} ngày; kết quả kém ổn định hơn.`]);
+  if(r.m<expected*0.8&&span>=W*0.95) m2.push(['warn',`Có ${r.m} điểm trong cửa sổ, ít hơn mức kỳ vọng ~${expected} điểm (5 phút/điểm). Kiểm tra dữ liệu bị thiếu.`]);
+  const absDiv=Math.abs(changeDiv);
+  if(absDiv<4) m2.push(['bad',`Metal loss trong cửa sổ mới đổi ~${fmt(absDiv,1)} chia độ (< 4). Chưa đủ để thấy xu hướng; chờ thêm dữ liệu.`]);
+  else if(absDiv<10) m2.push(['warn',`Metal loss đổi ~${fmt(absDiv,1)} chia độ: thấy được xu hướng sơ bộ, nhưng nên chờ đến khoảng 10 chia độ mới dùng rate.`]);
+  else m2.push(['ok',`Metal loss đổi ~${fmt(absDiv,1)} chia độ trong cửa sổ (≥ 10): tốc độ ăn mòn đủ tin cậy để dùng.`]);
+  if(r.slope<0) m2.push(['warn','Hệ số góc âm: thường do nhiễu (nhiệt độ) hoặc cửa sổ quá ngắn. Thử cửa sổ dài hơn.']);
+  if(mpy>0){const life=p.span/mpy*12; if(life<6) m2.push(['info',`Với tốc độ này, span ${p.span} mil chỉ dùng được ~${fmt(life,1)} tháng; cân nhắc span lớn hơn khi thay.`]); else if(life>9) m2.push(['info',`Với tốc độ này, span ${p.span} mil dùng được ~${fmt(life,1)} tháng; span nhỏ hơn sẽ nhạy hơn.`])}
+  $('rateMsgs2').innerHTML=m2.map(x=>`<div class="note ${x[0]}">${x[1]}</div>`).join('');
+  drawChart(pts,r,last-W,p);
+  $('rateCard').hidden=false;
+  store.set('data',{text:$('data').value.length<400000?$('data').value:'',type,W});
+}
+function drawChart(pts,r,wStart,p){
+  const Wd=640,H=280,L=52,R=14,T=14,B=40;
+  const xs=pts.map(q=>q.x),ys=pts.map(q=>q.y);
+  const xmin=0,xmax=Math.max(...xs)||1;let ymin=Math.min(...ys),ymax=Math.max(...ys);
+  if(ymax-ymin<1e-6){ymin-=0.05;ymax+=0.05}const pad=(ymax-ymin)*0.08;ymin-=pad;ymax+=pad;
+  const X=v=>L+(v-xmin)/(xmax-xmin)*(Wd-L-R),Y=v=>T+(1-(v-ymin)/(ymax-ymin))*(H-T-B);
+  let s=`<rect x="${X(Math.max(0,wStart))}" y="${T}" width="${X(xmax)-X(Math.max(0,wStart))}" height="${H-T-B}" fill="var(--loop-soft)"/>`;
+  for(let i=0;i<=4;i++){const v=ymin+(ymax-ymin)*i/4;s+=`<line x1="${L}" x2="${Wd-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${L-6}" y="${Y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)" font-family="inherit">${v.toFixed(3)}</text>`}
+  const nt=Math.min(6,Math.ceil(xmax));for(let i=0;i<=nt;i++){const v=xmax*i/nt;s+=`<text x="${X(v)}" y="${H-B+16}" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="inherit">${v.toFixed(1)}</text>`}
+  s+=`<text x="${(L+Wd-R)/2}" y="${H-6}" text-anchor="middle" font-size="12" fill="var(--muted)" font-family="inherit">Thời gian (ngày)</text>`;
+  s+=`<text x="14" y="${(T+H-B)/2}" transform="rotate(-90 14 ${(T+H-B)/2})" text-anchor="middle" font-size="12" fill="var(--muted)" font-family="inherit">Mất kim loại (mil)</text>`;
+  const step=Math.max(1,Math.floor(pts.length/1500));let d='';
+  for(let i=0;i<pts.length;i+=step){d+=`M${X(pts[i].x).toFixed(1)} ${Y(pts[i].y).toFixed(1)}h0.1`}
+  s+=`<path d="${d}" stroke="var(--data)" stroke-width="2.4" stroke-linecap="round" opacity=".7"/>`;
+  const x1=Math.max(0,wStart),x2=xmax;
+  s+=`<line x1="${X(x1)}" y1="${Y(r.inter+r.slope*x1)}" x2="${X(x2)}" y2="${Y(r.inter+r.slope*x2)}" stroke="var(--loop)" stroke-width="2.5"/>`;
+  s+=`<text x="${X(x1)+6}" y="${T+14}" font-size="11" fill="var(--loop)" font-family="inherit">cửa sổ hồi quy</text>`;
+  $('chart').innerHTML=`<svg viewBox="0 0 ${Wd} ${H}" role="img" aria-label="Đồ thị mất kim loại theo thời gian và đường hồi quy">${s}</svg>`;
+}
+function sample(){
+  const p=probe(),type=$('valType').value;
+  const start=new Date(2026,9,1,0,0);const out=[];const rate=0.02;const base=p.span*0.2;
+  for(let i=0;i<=5*288;i++){
+    const t=new Date(start.getTime()+i*300000);const days=i/288;
+    const loss=base+rate*days+0.004*Math.sin(days*2*Math.PI)+(Math.random()-.5)*0.006;
+    const v=type==='ma'?(4+loss/p.span*16).toFixed(4):loss.toFixed(4);
+    const ts=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')} ${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`;
+    out.push(`${ts}, ${v}`);
+  }
+  $('data').value=out.join('\n');calcRate();
+}
+function winLbl(){const W=parseFloat($('win').value);$('winLbl').textContent=W;$('winPts').textContent=Math.round(W*288)}
+let cvLock=false;
+function cv(from){if(cvLock)return;cvLock=true;
+  const d=parseFloat($('cvDay').value),m=parseFloat($('cvMpy').value),mm=parseFloat($('cvMm').value);
+  if(from==='d'&&Number.isFinite(d)){$('cvMpy').value=+(d*365).toFixed(4);$('cvMm').value=+(d*365*MM).toFixed(5)}
+  if(from==='m'&&Number.isFinite(m)){$('cvDay').value=+(m/365).toFixed(5);$('cvMm').value=+(m*MM).toFixed(5)}
+  if(from==='mm'&&Number.isFinite(mm)){$('cvMpy').value=+(mm/MM).toFixed(4);$('cvDay').value=+(mm/MM/365).toFixed(5)}
+  cvLock=false}
+
+/* ---------- step 5 ---------- */
+function renderLookup(){
+  const p=probe();const spans=[[5,'S10, T10'],[10,'S20, T20'],[20,'S40'],[25,'T50']];
+  const cur=[4,6,8,10,12,14,16,18,20];
+  let h=`<thead><tr><th>Span</th>${cur.map(c=>`<th>${c} mA<br><span class="small">${((c-4)/16*100).toFixed(1).replace('.0','')}%</span></th>`).join('')}</tr></thead><tbody>`;
+  spans.forEach(([s,n])=>{h+=`<tr class="${s===p.span?'cur':''}"><td><b>${s} mil</b> <span class="small">(${n})</span></td>${cur.map(c=>`<td>${+((c-4)/16*s).toFixed(3)}</td>`).join('')}</tr>`});
+  $('lookup').innerHTML=h+'</tbody>';
+}
+let cLock=false;
+function cmm(from){if(cLock)return;cLock=true;
+  if(from==='mil'){const v=parseFloat($('cMil').value);if(Number.isFinite(v))$('cMm').value=+(v*MM).toFixed(5)}
+  else{const v=parseFloat($('cMm').value);if(Number.isFinite(v))$('cMil').value=+(v/MM).toFixed(4)}
+  cLock=false}
+
+
+/* ---------- step 6: RCS P100 ---------- */
+const HIST=[['2017-08-10',32.2],['2017-09-14',32.4],['2017-09-21',33.4],['2017-09-28',34.1],['2017-10-06',32.9],['2017-10-13',33.9],['2017-10-20',33.7],['2017-11-03',33.4],['2017-11-10',33.8],['2018-05-10',33.5],['2018-05-17',34.0],['2018-05-25',33.4],['2018-06-01',33.833],['2018-06-08',34.033],['2018-06-15',33.5],['2018-06-22',33.75],['2018-06-29',34.633],['2018-07-06',33.733],['2018-07-13',33.467],['2018-07-20',34.267],['2018-07-27',33.933],['2018-12-07',34.4],['2019-06-22',32.8],['2019-12-22',33.71],['2020-06-22',33.12],['2020-12-26',33.1],['2021-01-30',33.1]];
+const D0=Date.UTC(2017,7,10),DIV0=32.2;
+const dayOf=s=>{const m=/^(\d{4})-(\d{1,2})-(\d{1,2})$/.exec(s.trim());return m?Math.round((Date.UTC(+m[1],+m[2]-1,+m[3])-D0)/86400000):NaN};
+const hv=HIST.slice(1).map(h=>h[1]);
+const hMean=hv.reduce((a,b)=>a+b,0)/hv.length;
+const hSd=Math.sqrt(hv.reduce((a,b)=>a+(b-hMean)**2,0)/(hv.length-1));
+const LAST=HIST[HIST.length-1];
+const rateMm=(dDiv,span,days)=>0.00927*dDiv*span/days;
+function renderHistStats(){
+  const span=parseFloat($('nSpan').value)||25;
+  const lastDays=dayOf(LAST[0]);
+  $('hStats').innerHTML=`
+   <div class="res"><div class="k">Gốc 10/08/2017</div><div class="v">32.2 DIV</div><div class="k">≈ ${fmt(4+32.2*0.016,4)} mA</div></div>
+   <div class="res"><div class="k">Lần cuối 30/01/2021</div><div class="v">33.1 DIV</div><div class="k">≈ ${fmt(4+33.1*0.016,4)} mA</div></div>
+   <div class="res"><div class="k">Trung bình các lần đọc</div><div class="v">${fmt(hMean,2)} DIV</div><div class="k">độ lệch chuẩn ${fmt(hSd,2)} DIV</div></div>
+   <div class="res"><div class="k">Mất kim loại đến 2021</div><div class="v">${fmt(0.9/1000*span,4)} mil</div><div class="k">${fmt(0.9/1000*span*MM,5)} mm</div></div>
+   <div class="res hl"><div class="k">Rate báo cáo cũ (2021)</div><div class="v">${(rateMm(0.9,span,lastDays)*1000).toFixed(3)} µm/năm</div><div class="k">${rateMm(0.9,span,lastDays).toExponential(2)} mm/năm</div></div>`;
+}
+function drawHist(newPt){
+  const Wd=640,H=260,L=48,R=14,T=14,B=36;
+  const pts=HIST.map(h=>({x:dayOf(h[0]),y:h[1]}));
+  const all=newPt?pts.concat([newPt]):pts;
+  const xmax=Math.max(...all.map(p=>p.x))*1.03;
+  let ymin=Math.min(31.5,...all.map(p=>p.y))-0.3,ymax=Math.max(35.5,...all.map(p=>p.y))+0.3;
+  const X=v=>L+v/xmax*(Wd-L-R),Y=v=>T+(1-(v-ymin)/(ymax-ymin))*(H-T-B);
+  let s=`<rect x="${L}" y="${Y(hMean+2*hSd)}" width="${Wd-L-R}" height="${Y(hMean-2*hSd)-Y(hMean+2*hSd)}" fill="var(--loop-soft)"/>`;
+  for(let v=Math.ceil(ymin);v<=ymax;v++)s+=`<line x1="${L}" x2="${Wd-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${L-6}" y="${Y(v)+4}" text-anchor="end" font-size="11" fill="var(--muted)" font-family="inherit">${v}</text>`;
+  for(let yr=2018;yr<=2027;yr++){const xd=(Date.UTC(yr,0,1)-D0)/86400000;if(xd>xmax)break;s+=`<text x="${X(xd)}" y="${H-B+16}" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="inherit">${yr}</text><line x1="${X(xd)}" x2="${X(xd)}" y1="${H-B}" y2="${H-B+4}" stroke="var(--muted)"/>`}
+  s+=`<line x1="${L}" x2="${Wd-R}" y1="${Y(DIV0)}" y2="${Y(DIV0)}" stroke="var(--muted)" stroke-dasharray="4 4"/>`;
+  s+=`<text x="14" y="${(T+H-B)/2}" transform="rotate(-90 14 ${(T+H-B)/2})" text-anchor="middle" font-size="12" fill="var(--muted)" font-family="inherit">DIV</text>`;
+  s+=`<polyline points="${pts.map(p=>X(p.x).toFixed(1)+','+Y(p.y).toFixed(1)).join(' ')}" fill="none" stroke="var(--data)" stroke-width="1.2" opacity=".6"/>`;
+  pts.forEach(p=>s+=`<circle cx="${X(p.x)}" cy="${Y(p.y)}" r="3.2" fill="var(--data)"/>`);
+  if(newPt){s+=`<line x1="${X(pts[pts.length-1].x)}" y1="${Y(pts[pts.length-1].y)}" x2="${X(newPt.x)}" y2="${Y(newPt.y)}" stroke="var(--loop)" stroke-dasharray="3 4"/><circle cx="${X(newPt.x)}" cy="${Y(newPt.y)}" r="6" fill="var(--loop)" stroke="var(--panel)" stroke-width="2"/><text x="${X(newPt.x)-8}" y="${Y(newPt.y)-10}" text-anchor="end" font-size="12" font-weight="600" fill="var(--loop)" font-family="inherit">lần đo mới ${newPt.y.toFixed(2)}</text>`}
+  $('hChart').innerHTML=`<svg viewBox="0 0 ${Wd} ${H}" role="img" aria-label="Số đọc DIV của RCS-P100-2 theo thời gian">${s}</svg>`;
+}
+function renderNew(){
+  renderHistStats();
+  const span=parseFloat($('nSpan').value)||25,type=$('nType').value,days=dayOf($('nDate').value);
+  const vals=['n1','n2','n3'].map(id=>parseFloat($(id).value)).filter(Number.isFinite);
+  store.set('rcs',{d:$('nDate').value,t:type,s:$('nSpan').value,v:['n1','n2','n3'].map(id=>$(id).value)});
+  if(!vals.length||!Number.isFinite(days)){previewPt=null;window.__curDiv=null;if(typeof renderReport==='function')renderReport();$('nRes').innerHTML='';$('nMsgs').innerHTML=Number.isFinite(days)?'':'<div class="note bad">Ngày đo phải có dạng YYYY-MM-DD.</div>';$('nRow').textContent='—';drawHist(null);return}
+  const divs=vals.map(v=>type==='ma'?(v-4)/16*1000:v);
+  const div=divs.reduce((a,b)=>a+b,0)/divs.length;
+  const dB=div-DIV0,dL=div-LAST[1],dM=div-hMean;
+  const daysL=days-dayOf(LAST[0]);
+  const rB=rateMm(dB,span,days),rL=daysL>0?rateMm(dL,span,daysL):NaN;
+  const z=dM/hSd;
+  const spread=divs.length>1?Math.max(...divs)-Math.min(...divs):0;
+  $('nRes').innerHTML=`
+   <div class="res hl"><div class="k">DIV hiện tại${divs.length>1?' (trung bình '+divs.length+' lần)':''}</div><div class="v">${fmt(div,2)}</div><div class="k">≈ ${fmt(4+div*0.016,4)} mA · ${fmt(div/1000*span,4)} mil</div></div>
+   <div class="res"><div class="k">So với gốc 2017 (32.2)</div><div class="v">${dB>=0?'+':''}${fmt(dB,2)} DIV</div><div class="k">${fmt(dB/1000*span,4)} mil · ${fmt(dB/1000*span*MM,5)} mm</div></div>
+   <div class="res"><div class="k">So với lần cuối 2021 (33.1)</div><div class="v">${dL>=0?'+':''}${fmt(dL,2)} DIV</div><div class="k">${fmt(dL/1000*span,4)} mil · ${fmt(dL/1000*span*MM,5)} mm</div></div>
+   <div class="res hl"><div class="k">Rate từ 2017 (công thức báo cáo)</div><div class="v">${fmt(rB*1000,3)} µm/năm</div><div class="k">${rB.toExponential(2)} mm/năm · ${fmt(rB/MM,4)} mpy</div></div>
+   <div class="res"><div class="k">Rate từ 01/2021 đến nay</div><div class="v">${Number.isFinite(rL)?fmt(rL*1000,3)+' µm/năm':'—'}</div><div class="k">trong ${daysL} ngày</div></div>
+   <div class="res"><div class="k">Số ngày từ gốc</div><div class="v">${days}</div><div class="k">≈ ${fmt(days/365.25,1)} năm</div></div>`;
+  const m=[];
+  if(type==='ma'&&vals.some(v=>v<4||v>20))m.push(['bad','Có số đọc ngoài 4–20 mA: kiểm tra cáp, đầu nối, nguồn và công tắc loại đầu dò trước khi so sánh.']);
+  if(type==='div'&&vals.some(v=>v>40)&&vals.some(v=>v<25))m.push(['warn','Các số đọc chênh nhau rất xa; kiểm tra lại đơn vị đã chọn.']);
+  if(spread>1.5)m.push(['warn',`Các lần đọc chênh nhau ${fmt(spread,2)} DIV, lớn hơn dao động thường thấy. Đọc thêm vài lần và chờ số ổn định.`]);
+  if(Math.abs(z)<=2)m.push(['ok',`DIV mới nằm trong dải dao động của số liệu cũ (${fmt(hMean-2*hSd,2)}–${fmt(hMean+2*hSd,2)}). Chưa thấy ăn mòn tăng thêm so với 2017–2021; chênh lệch hiện có nằm trong mức nhiễu của phép đo.`]);
+  else if(z>2&&dB<10)m.push(['warn',`DIV mới cao hơn dải dao động cũ (${fmt(z,1)} độ lệch chuẩn), có thể là ăn mòn bắt đầu tăng, hoặc do khác thiết bị đọc. Thay đổi so với gốc mới ${fmt(dB,1)} DIV, dưới ngưỡng 10 DIV để tính rate tin cậy; đo lặp lại và đối chiếu với máy đọc cũ nếu có.`]);
+  else if(z>2)m.push(['bad',`DIV mới tăng ${fmt(dB,1)} DIV so với gốc (≥ 10 DIV) và vượt rõ dải dao động cũ: có dấu hiệu ăn mòn thực sự. Rate tính từ 2017 là ${fmt(rB*1000,2)} µm/năm, từ 2021 là ${Number.isFinite(rL)?fmt(rL*1000,2):'—'} µm/năm.`]);
+  else m.push(['warn',`DIV mới thấp hơn dải dao động cũ. Mất kim loại không thể giảm, nên đây thường là do lệch giữa hai thiết bị đọc, nhiệt độ, hoặc tiếp xúc đầu nối. Kiểm tra lại trước khi dùng.`]);
+  $('nMsgs').innerHTML=m.map(x=>`<div class="note ${x[0]}">${x[1]}</div>`).join('');
+  const dd=$('nDate').value.trim().split('-');
+  $('nRow').textContent=`${dd[2]}/${dd[1]}/${dd[0]}\t${div.toFixed(2)}\t${span}\t${days}\t${rB.toExponential(4)}`;
+  drawHist({x:days,y:div});
+  previewPt={d:$('nDate').value.trim(),div};window.__curDiv=div;renderReport();
+}
+
+
+/* ---------- step 6b: report chart ---------- */
+let rcsSeries=store.get('rcsSeries',[]);
+let previewPt=null;
+const PAL_SCREEN={bg:'var(--panel)',ink:'var(--ink)',muted:'var(--muted)',grid:'var(--line)',old:'var(--data)',neu:'var(--pri)',font:'inherit'};
+const PAL_PRINT={bg:'#FFFFFF',ink:'#1B2533',muted:'#5D6878',grid:'#D9DFE7',old:'#8193A8',neu:'#1F4E79',font:'Arial, Helvetica, sans-serif'};
+function metricOf(div,days,span,met){
+  if(met==='div')return div;
+  if(met==='loss')return (div-DIV0)/1000*span*MM;
+  return days>0?rateMm(div-DIV0,span,days):0;
+}
+function niceStep(range,n){const raw=range/n,p=Math.pow(10,Math.floor(Math.log10(raw))),f=raw/p;return (f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*p}
+function smoothPath(P){
+  if(P.length<2)return '';let d=`M${P[0][0].toFixed(1)} ${P[0][1].toFixed(1)}`;
+  for(let i=0;i<P.length-1;i++){const p0=P[i-1]||P[i],p1=P[i],p2=P[i+1],p3=P[i+2]||p2;
+    const c1=[p1[0]+(p2[0]-p0[0])/6,p1[1]+(p2[1]-p0[1])/6],c2=[p2[0]-(p3[0]-p1[0])/6,p2[1]-(p3[1]-p1[1])/6];
+    d+=` C${c1[0].toFixed(1)} ${c1[1].toFixed(1)} ${c2[0].toFixed(1)} ${c2[1].toFixed(1)} ${p2[0].toFixed(1)} ${p2[1].toFixed(1)}`}
+  return d;
+}
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function buildReportSvg(pal,forExport){
+  const span=parseFloat($('nSpan').value)||25,met=$('rMetric').value,fixed=$('rFixed').checked&&met==='rate';
+  const W=760,H=450,L=78,R=24,T=56,B=96;
+  const old=HIST.map(h=>{const d=dayOf(h[0]);return {x:d,y:metricOf(h[1],d,span,met)}});
+  const neu=rcsSeries.map(r=>{const d=dayOf(r.d);return {x:d,y:metricOf(r.div,d,span,met),d:r.d}}).filter(p=>Number.isFinite(p.x)).sort((a,b)=>a.x-b.x);
+  const pv=previewPt&&!rcsSeries.some(r=>r.d===previewPt.d)?{x:dayOf(previewPt.d),y:metricOf(previewPt.div,dayOf(previewPt.d),span,met)}:null;
+  const all=old.concat(neu,pv?[pv]:[]);
+  let xmax=Math.max(...all.map(p=>p.x));if(fixed&&!neu.length&&!pv)xmax=1269;
+  const xs=niceStep(xmax,9);xmax=Math.ceil(xmax/xs)*xs;
+  let ymin=Math.min(...all.map(p=>p.y)),ymax=Math.max(...all.map(p=>p.y));
+  if(met!=='div'){ymin=Math.min(0,ymin)}
+  if(fixed){ymin=Math.min(0,ymin);ymax=Math.max(0.014,ymax)}
+  if(ymax-ymin<1e-9){ymax+=1e-3}
+  const ys=niceStep(ymax-ymin,7);ymin=Math.floor(ymin/ys)*ys;ymax=Math.ceil(ymax/ys)*ys;if(fixed&&ymax<0.014)ymax=0.014;
+  const X=v=>L+v/xmax*(W-L-R),Y=v=>T+(1-(v-ymin)/(ymax-ymin))*(H-T-B);
+  const dec=met==='rate'?3:met==='div'?1:4;
+  const F=`font-family="${pal.font}"`;
+  let s=`<rect x="0" y="0" width="${W}" height="${H}" fill="${pal.bg}"/>`;
+  s+=`<text x="${W/2}" y="30" text-anchor="middle" font-size="17" font-weight="700" fill="${pal.ink}" ${F}>${esc($('rTitle').value)}</text>`;
+  for(let v=ymin;v<=ymax+ys/2;v+=ys){s+=`<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="${pal.grid}"/><text x="${L-8}" y="${Y(v)+4}" text-anchor="end" font-size="12" fill="${pal.muted}" ${F}>${v.toFixed(Math.max(dec,ys<0.001?4:0))}</text>`}
+  for(let v=0;v<=xmax+xs/2;v+=xs){s+=`<line x1="${X(v)}" x2="${X(v)}" y1="${T}" y2="${H-B}" stroke="${pal.grid}"/><text x="${X(v)}" y="${H-B+18}" text-anchor="middle" font-size="12" fill="${pal.muted}" ${F}>${Math.round(v)}</text>`}
+  s+=`<rect x="${L}" y="${T}" width="${W-L-R}" height="${H-T-B}" fill="none" stroke="${pal.muted}" stroke-width="1"/>`;
+  if(ymin<0&&ymax>0)s+=`<line x1="${L}" x2="${W-R}" y1="${Y(0)}" y2="${Y(0)}" stroke="${pal.ink}" stroke-width="1"/>`;
+  s+=`<text x="${(L+W-R)/2}" y="${H-B+42}" text-anchor="middle" font-size="13" fill="${pal.ink}" ${F}>Thời gian (ngày) tính từ 10/08/2017</text>`;
+  const yt=met==='rate'?'Tốc độ ăn mòn (mm/năm)':met==='div'?'Số đọc (DIV)':'Mất kim loại (mm)';
+  s+=`<text x="20" y="${(T+H-B)/2}" transform="rotate(-90 20 ${(T+H-B)/2})" text-anchor="middle" font-size="13" fill="${pal.ink}" ${F}>${yt}</text>`;
+  const P=old.map(p=>[X(p.x),Y(p.y)]);
+  s+=`<path d="${smoothPath(P)}" fill="none" stroke="${pal.old}" stroke-width="2"/>`;
+  P.forEach(p=>s+=`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="4" fill="${pal.old}" stroke="${pal.bg}" stroke-width="1"/>`);
+  const lastOld=P[P.length-1];
+  if(neu.length){
+    const Q=neu.map(p=>[X(p.x),Y(p.y)]);
+    s+=`<line x1="${lastOld[0]}" y1="${lastOld[1]}" x2="${Q[0][0]}" y2="${Q[0][1]}" stroke="${pal.neu}" stroke-width="1.5" stroke-dasharray="5 5"/>`;
+    if(Q.length>1)s+=`<path d="${smoothPath(Q)}" fill="none" stroke="${pal.neu}" stroke-width="2.2"/>`;
+    Q.forEach(q=>s+=`<rect x="${(q[0]-5).toFixed(1)}" y="${(q[1]-5).toFixed(1)}" width="10" height="10" transform="rotate(45 ${q[0].toFixed(1)} ${q[1].toFixed(1)})" fill="${pal.neu}" stroke="${pal.bg}" stroke-width="1"/>`);
+  }
+  if(pv){const px=X(pv.x),py=Y(pv.y);const from=neu.length?[X(neu[neu.length-1].x),Y(neu[neu.length-1].y)]:lastOld;
+    s+=`<line x1="${from[0]}" y1="${from[1]}" x2="${px}" y2="${py}" stroke="${pal.neu}" stroke-width="1" stroke-dasharray="2 4"/><circle cx="${px}" cy="${py}" r="6" fill="${pal.bg}" stroke="${pal.neu}" stroke-width="2"/>`}
+  // legend
+  const ly=H-26;let lx=L;const items=[['old',`Số liệu cũ 2017–2021 (${old.length} lần)`]];
+  if(neu.length)items.push(['neu',`Lần đo mới (${neu.length} lần)`]);
+  if(pv&&!forExport)items.push(['pv','Đang nhập, chưa lưu']);
+  items.forEach(([k,t])=>{
+    if(k==='old')s+=`<line x1="${lx}" x2="${lx+26}" y1="${ly}" y2="${ly}" stroke="${pal.old}" stroke-width="2"/><circle cx="${lx+13}" cy="${ly}" r="4" fill="${pal.old}"/>`;
+    if(k==='neu')s+=`<line x1="${lx}" x2="${lx+26}" y1="${ly}" y2="${ly}" stroke="${pal.neu}" stroke-width="2.2"/><rect x="${lx+8}" y="${ly-5}" width="10" height="10" transform="rotate(45 ${lx+13} ${ly})" fill="${pal.neu}"/>`;
+    if(k==='pv')s+=`<circle cx="${lx+13}" cy="${ly}" r="5.5" fill="${pal.bg}" stroke="${pal.neu}" stroke-width="2"/>`;
+    s+=`<text x="${lx+34}" y="${ly+4}" font-size="12" fill="${pal.ink}" ${F}>${esc(t)}</text>`;lx+=34+t.length*6.6+28});
+  if(pv&&forExport&&!neu.length){}
+  return {svg:`<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Biểu đồ kết quả RCS-P100-2">${s}</svg>`,W,H};
+}
+function renderReport(){
+  $('reportChart').innerHTML=buildReportSvg(PAL_SCREEN,false).svg.replace(/width="760" height="450" /,'');
+  const span=parseFloat($('nSpan').value)||25;
+  const rows=rcsSeries.slice().sort((a,b)=>a.d<b.d?-1:1);
+  $('savedTbl').innerHTML=`<thead><tr><th>Ngày</th><th>DIV</th><th>≈ mA</th><th>Số ngày</th><th>Tốc độ (mm/năm)</th><th>So với gốc</th><th></th></tr></thead><tbody>${
+    rows.length?rows.map(r=>{const d=dayOf(r.d);return `<tr><td>${r.d}</td><td>${fmt(r.div,2)}</td><td>${fmt(4+r.div*0.016,4)}</td><td>${d}</td><td>${rateMm(r.div-DIV0,span,d).toExponential(3)}</td><td>${r.div-DIV0>=0?'+':''}${fmt(r.div-DIV0,2)} DIV</td><td><button class="btn ghost" style="min-height:30px;padding:3px 10px" data-del="${r.d}">Xóa</button></td></tr>`}).join(''):`<tr><td colspan="7" class="small">Chưa có lần đo mới nào được lưu. Nhập số đọc ở trên rồi bấm "Lưu lần đo này vào biểu đồ".</td></tr>`}</tbody>`;
+  $('savedTbl').querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{rcsSeries=rcsSeries.filter(r=>r.d!==b.dataset.del);store.set('rcsSeries',rcsSeries);renderReport()}));
+}
+function seriesCsv(){
+  const span=parseFloat($('nSpan').value)||25;
+  const lines=['Ngày,DIV,Span (mil),Số ngày,Tốc độ ăn mòn (mm/năm),Nguồn'];
+  HIST.forEach(h=>{const d=dayOf(h[0]);lines.push(`${h[0]},${h[1]},${span},${d},${d>0?rateMm(h[1]-DIV0,span,d).toExponential(6):0},Báo cáo cũ`)});
+  rcsSeries.slice().sort((a,b)=>a.d<b.d?-1:1).forEach(r=>{const d=dayOf(r.d);lines.push(`${r.d},${r.div.toFixed(3)},${span},${d},${rateMm(r.div-DIV0,span,d).toExponential(6)},Đo mới`)});
+  return lines.join('\r\n');
+}
+let dl=null;
+const inClaude=!!(window.claude&&typeof window.claude.use==='function');
+$('dlRow').hidden=inClaude;
+(async()=>{if(!inClaude)return;try{dl=await window.claude.use('downloads')}catch(e){dl=null}$('dlRow').hidden=!dl})();
+async function saveFile(filename,data){
+  $('dlMsg').innerHTML='';
+  if(!dl){const blob=data instanceof Blob?data:new Blob([data],{type:filename.endsWith('.svg')?'image/svg+xml':'text/csv;charset=utf-8'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;document.body.appendChild(a);a.click();
+    setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);return}
+  try{await dl.save({filename,data})}
+  catch(e){const c=e&&e.code;if(c==='declined')return;
+    $('dlMsg').innerHTML=`<div class="note warn">${c==='rate_limited'?'Đang có một hộp thoại tải xuống mở; thử lại sau giây lát.':'Không tải được tệp trong chế độ xem này.'}</div>`;
+    if(['unavailable','not_granted','capability_disabled','capability_removed'].includes(c))$('dlRow').hidden=true}
+}
+async function svgToPng(svg,w,h){
+  const img=new Image();
+  await new Promise((res,rej)=>{img.onload=res;img.onerror=rej;img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg)});
+  const c=document.createElement('canvas');c.width=w*2;c.height=h*2;const ctx=c.getContext('2d');ctx.scale(2,2);ctx.drawImage(img,0,0,w,h);
+  return await new Promise(r=>c.toBlob(r,'image/png'));
+}
+const stamp=()=>(rcsSeries.length?rcsSeries.map(r=>r.d).sort().pop():'2021-01-30');
+
+/* ---------- wiring ---------- */
+function renderAll(){renderStrip();renderProbes();renderProbeDetail();renderDial();renderMA();renderRev();renderLookup();if(!$('rateCard').hidden)calcRate()}
+$('expRate').addEventListener('input',()=>{store.set('exp',$('expRate').value);renderProbes()});
+['vs','rl','cable','zone'].forEach(id=>$(id).addEventListener('input',renderLoop));
+$('ma').addEventListener('input',()=>{$('maR').value=$('ma').value;renderMA()});
+$('maR').addEventListener('input',()=>{$('ma').value=(+$('maR').value).toFixed(2);renderMA()});
+$('revVal').addEventListener('input',renderRev);$('revUnit').addEventListener('change',renderRev);
+$('win').addEventListener('input',()=>{winLbl();if(!$('rateCard').hidden)calcRate()});
+$('calc').addEventListener('click',calcRate);$('sample').addEventListener('click',sample);
+$('clear').addEventListener('click',()=>{$('data').value='';$('rateCard').hidden=true;$('rateMsgs').innerHTML='';store.set('data',null)});
+$('cvDay').addEventListener('input',()=>cv('d'));$('cvMpy').addEventListener('input',()=>cv('m'));$('cvMm').addEventListener('input',()=>cv('mm'));
+$('cMil').addEventListener('input',()=>cmm('mil'));$('cMm').addEventListener('input',()=>cmm('mm'));
+['nDate','nType','nSpan','n1','n2','n3'].forEach(id=>$(id).addEventListener('input',renderNew));
+$('nCopy').addEventListener('click',()=>{try{navigator.clipboard.writeText($('nRow').textContent);$('nCopy').textContent='Đã sao chép'}catch(e){}});
+
+$('nSave').addEventListener('click',()=>{
+  if(!previewPt||!Number.isFinite(dayOf(previewPt.d))){$('nMsgs').insertAdjacentHTML('afterbegin','<div class="note bad">Nhập ngày đo và ít nhất một số đọc trước khi lưu.</div>');return}
+  if(dayOf(previewPt.d)<=dayOf(LAST[0])){$('nMsgs').insertAdjacentHTML('afterbegin','<div class="note bad">Ngày đo mới phải sau 30/01/2021.</div>');return}
+  rcsSeries=rcsSeries.filter(r=>r.d!==previewPt.d).concat([{d:previewPt.d,div:+previewPt.div.toFixed(3)}]);
+  store.set('rcsSeries',rcsSeries);renderReport();
+  $('nSave').textContent='Đã lưu ✓';setTimeout(()=>$('nSave').textContent='Lưu lần đo này vào biểu đồ',1500);
+});
+['rTitle','rMetric','rFixed'].forEach(id=>$(id).addEventListener('input',()=>{store.set('rpt',{t:$('rTitle').value,m:$('rMetric').value,f:$('rFixed').checked});renderReport()}));
+$('rFixed').addEventListener('change',renderReport);$('rMetric').addEventListener('change',renderReport);
+$('copyAll').addEventListener('click',()=>{try{navigator.clipboard.writeText(seriesCsv().replace(/,/g,'\t'));$('copyAll').textContent='Đã sao chép ✓';setTimeout(()=>$('copyAll').textContent='Sao chép tất cả dòng (dán vào Excel)',1500)}catch(e){}});
+$('dlSvg').addEventListener('click',()=>{saveFile(`RCS-P100-2_bieu-do_${stamp()}.svg`,buildReportSvg(PAL_PRINT,true).svg)});
+$('dlCsv').addEventListener('click',()=>{saveFile(`RCS-P100-2_so-lieu_${stamp()}.csv`,'\uFEFF'+seriesCsv())});
+$('dlPng').addEventListener('click',async()=>{const r=buildReportSvg(PAL_PRINT,true);
+  try{const blob=await svgToPng(r.svg,r.W,r.H);if(!blob)throw 0;saveFile(`RCS-P100-2_bieu-do_${stamp()}.png`,blob)}
+  catch(e){$('dlMsg').innerHTML='<div class="note warn">Trình duyệt không tạo được ảnh PNG; hãy dùng "Tải SVG" (mở được bằng Word, PowerPoint, trình duyệt).</div>'}});
+$('resetCheck').addEventListener('click',()=>{store.set('final',{});renderChecklist('finalCheck',FINAL,'final')});
+
+// restore
+const lp=store.get('loop',null);if(lp){$('vs').value=lp.vs;$('rl').value=lp.rl;$('cable').value=lp.cable;$('zone').value=lp.zone}
+$('expRate').value=store.get('exp','');
+const ma=store.get('ma',null);if(ma!==null){$('ma').value=ma;$('maR').value=ma}
+const dd=store.get('data',null);if(dd){$('data').value=dd.text||'';$('valType').value=dd.type||'ma';$('win').value=dd.W||3}
+const rc=store.get('rcs',null);if(rc){$('nDate').value=rc.d||'2026-10-07';$('nType').value=rc.t||'ma';$('nSpan').value=rc.s||25;['n1','n2','n3'].forEach((id,i)=>$(id).value=(rc.v||[])[i]||'')}
+winLbl();cv('d');cmm('mil');
+renderChecklist('instCheck',INST,'inst');renderChecklist('finalCheck',FINAL,'final');
+renderLoop();renderAll();
+if($('data').value.trim())calcRate();
+const rp=store.get('rpt',null);if(rp){$('rTitle').value=rp.t||$('rTitle').value;$('rMetric').value=rp.m||'rate';$('rFixed').checked=!!rp.f}
+renderNew();renderReport();
+go(store.get('step',0));
+})();
+</script>
+</body>
+</html>
